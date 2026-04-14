@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ses Tanıma Uygulaması</title>
+    <!-- Google Fonts üzerinden Poppins yedeği (Önizleme için) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Yüklenen lokal font dosyalarını tanımlıyoruz */
+        @font-face {
+            font-family: 'Poppins Local';
+            src: url('Poppins-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Poppins Local';
+            src: url('Poppins-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        /* Sıfırlama ve Temel Ayarlar */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            /* Öncelikli lokal font, yoksa Google Fonts, yoksa sans-serif */
+            font-family: 'Poppins Local', 'Poppins', sans-serif;
+            background-color: #ffffff; /* Arka plan siyah renkten beyaza çevrildi */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #334155;
+        }
+
+        /* 1920x960 Duyarlı Kapsayıcı (2:1 Aspect Ratio) */
+        .app-wrapper {
+            position: relative;
+            background-color: #f8fafc;
+            width: 100vw;
+            height: 50vw; /* 2:1 Oranı */
+            max-width: 1920px;
+            max-height: 960px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        /* Çok geniş ekranlar için oran koruması */
+        @media (min-aspect-ratio: 2/1) {
+            .app-wrapper {
+                width: 200vh;
+                height: 100vh;
+            }
+        }
+
+        /* Arka Plan Dekoratif Şekilleri (İstenen Renklerle) */
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.25; /* Renklerin biraz daha belirgin olması için 0.15'ten 0.25'e çıkarıldı */
+            z-index: 0;
+        }
+
+        .bg-shape.cyan {
+            background-color: #23ADCE;
+            width: 800px;
+            height: 800px;
+            top: -200px;
+            left: -100px;
+        }
+
+        .bg-shape.coral {
+            background-color: #FC6961;
+            width: 600px;
+            height: 600px;
+            bottom: -150px;
+            right: -50px;
+        }
+
+        /* Ana İçerik Kutusu */
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            width: 90%;
+            max-width: 500px;
+            padding: 3.5rem 2.5rem;
+            border-radius: 2rem;
+            box-shadow: 0 15px 35px rgba(35, 173, 206, 0.1), 0 5px 15px rgba(252, 105, 97, 0.05);
+            text-align: center;
+            z-index: 1;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #23ADCE; /* Başlık Rengi */
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .instruction {
+            color: #64748b;
+            font-size: 1.05rem;
+            font-weight: 400;
+            margin-bottom: 2.5rem;
+        }
+
+        /* Mikrofon Butonu */
+        .mic-btn {
+            background-color: #23ADCE; /* İstenilen Cam Göbeği Rengi */
+            color: white;
+            border: none;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 1.5rem auto;
+            box-shadow: 0 10px 25px rgba(35, 173, 206, 0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .mic-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(35, 173, 206, 0.5);
+        }
+
+        .mic-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Dinleme Sırasındaki Animasyon (Pulse) - FC6961 Rengiyle */
+        .mic-btn.listening {
+            background-color: #FC6961; /* Kayıt sırasında mercan rengi */
+            box-shadow: 0 0 0 0 rgba(252, 105, 97, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(252, 105, 97, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 30px rgba(252, 105, 97, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(252, 105, 97, 0);
+            }
+        }
+
+        .mic-icon {
+            width: 45px;
+            height: 45px;
+            fill: currentColor;
+        }
+
+        /* Durum ve Sonuç Metinleri */
+        .status-text {
+            font-size: 1rem;
+            color: #94a3b8;
+            min-height: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .result-box {
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(10px);
+        }
+
+        .result-title.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Sonuç Renklerini İstenen Palete Göre Ayarladık */
+        .result-title.success {
+            color: #23ADCE; /* Doğruysa Mavi */
+        }
+
+        .result-title.error {
+            color: #FC6961; /* Yanlışsa Mercan/Kırmızı */
+        }
+
+        .transcript {
+            font-size: 0.95rem;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            display: none;
+            width: 100%;
+            word-wrap: break-word;
+            border-left: 4px solid #23ADCE;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1920x960 Sabit Oranlı Tasarım Kapsayıcısı -->
+    <div class="app-wrapper">
+        <!-- Dekoratif Arka Plan Şekilleri -->
+        <div class="bg-shape cyan"></div>
+        <div class="bg-shape coral"></div>
+
+        <div class="container">
+            <h1>Sesli Yanıt</h1>
+            <p class="instruction">Mikrofona bas ve <strong>"merhaba"</strong> de</p>
+
+            <!-- Mikrofon Butonu -->
+            <button id="micBtn" class="mic-btn" aria-label="Mikrofonu Başlat">
+                <svg class="mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                </svg>
+            </button>
+
+            <!-- Canlı Durum Metni -->
+            <div id="statusText" class="status-text">Başlamak için butona tıkla</div>
+
+            <!-- Sonuç Gösterge Alanı -->
+            <div class="result-box">
+                <div id="resultTitle" class="result-title"></div>
+                <div id="transcriptText" class="transcript"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elementlerini Seçme
+        const micBtn = document.getElementById('micBtn');
+        const statusText = document.getElementById('statusText');
+        const resultTitle = document.getElementById('resultTitle');
+        const transcriptText = document.getElementById('transcriptText');
+
+        // Web Speech API Desteğini Kontrol Etme
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        let recognition;
+
+        if (!SpeechRecognition) {
+            statusText.textContent = "Tarayıcınız Ses Tanıma özelliğini desteklemiyor. Lütfen Chrome kullanın.";
+            statusText.style.color = "#FC6961";
+            micBtn.disabled = true;
+            micBtn.style.backgroundColor = "#cbd5e1";
+            micBtn.style.cursor = "not-allowed";
+            micBtn.style.boxShadow = "none";
+        } else {
+            // SpeechRecognition Ayarları
+            recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            // Mikrofon butonuna tıklanınca dinlemeyi başlat (Güncellenmiş İzin Kontrolü)
+            micBtn.addEventListener('click', async () => {
+                if (micBtn.classList.contains('listening')) return; // Zaten dinliyorsa tekrar başlatma
+
+                try {
+                    statusText.textContent = "İzin bekleniyor...";
+                    statusText.style.color = "#23ADCE";
+
+                    // 1. Tarayıcıdan açıkça mikrofon izni iste (Storyline iframe engelini aşmayı zorlamak için)
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    // İzin alındıysa, media stream'i hemen kapatabiliriz çünkü SpeechRecognition kendi akışını açacaktır.
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // 2. İzin başarılı, Speech API'yi başlat
+                    recognition.start();
+
+                } catch (err) {
+                    console.warn("Mikrofon izni hatası:", err);
+                    // Eğer getUserMedia hata verirse (Iframe engeli veya kullanıcı reddi)
+                    statusText.textContent = "Mikrofon izni reddedildi. Lütfen izin verin.";
+                    statusText.style.color = "#FC6961";
+                    micBtn.classList.remove('listening');
+                }
+            });
+
+            // 1. Dinleme başladığında tetiklenir
+            recognition.onstart = () => {
+                micBtn.classList.add('listening');
+                statusText.textContent = "Dinleniyor...";
+                statusText.style.color = "#FC6961"; // İstenen mercan rengi
+                
+                resultTitle.className = 'result-title';
+                resultTitle.textContent = "";
+                transcriptText.style.display = 'none';
+                transcriptText.textContent = "";
+            };
+
+            // 2. Bir sonuç algılandığında tetiklenir
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                
+                transcriptText.textContent = `Senin söylediğin: "${transcript}"`;
+                transcriptText.style.display = 'block';
+
+                if (transcript.toLowerCase().includes('merhaba')) {
+                    // Başarı rengi #23ADCE olarak belirlendi
+                    resultTitle.textContent = "Doğru! ✅";
+                    resultTitle.className = 'result-title show success';
+                } else {
+                    // Hata rengi #FC6961 olarak belirlendi
+                    resultTitle.textContent = "Tekrar dene ❌";
+                    resultTitle.className = 'result-title show error';
+                }
+            };
+
+            // 3. Herhangi bir hata oluştuğunda tetiklenir
+            recognition.onerror = (event) => {
+                micBtn.classList.remove('listening');
+                transcriptText.style.display = 'none';
+                
+                if (event.error === 'not-allowed') {
+                    statusText.textContent = "Mikrofon izni reddedildi. Lütfen izin verin.";
+                } else if (event.error === 'no-speech') {
+                    statusText.textContent = "Ses algılanamadı. Lütfen tekrar deneyin.";
+                } else {
+                    statusText.textContent = "Bir hata oluştu: " + event.error;
+                }
+                statusText.style.color = "#FC6961"; 
+            };
+
+            // 4. Dinleme işlemi tamamen bittiğinde tetiklenir
+            recognition.onend = () => {
+                micBtn.classList.remove('listening'); 
+                
+                if (statusText.textContent === "Dinleniyor...") {
+                    statusText.textContent = "İşlem tamamlandı.";
+                    statusText.style.color = "#94a3b8";
+                }
+            };
+        }
+    </script>
+</body>
+</html>
